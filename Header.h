@@ -1,9 +1,14 @@
 #pragma once
+
 #include"Macros.h"
 #include<type_traits>
+
 #include<iostream>
 #include<utility>
+
+#if _HAS_CXX20
 _PANAGIOTIS_BEGIN
+
 template<class _Ty>
 class stack {
 private:
@@ -11,38 +16,33 @@ private:
 	public:
 		stack_node* next;
 		_Ty data;
-#if _HAS_CXX20
 		template<typename t=_Ty>
 		requires(std::is_default_constructible_v<t>)
+
 		stack_node() :data{}, next{ nullptr } {
 
 		}
-#endif
+
 		stack_node(_Ty data1) :data{ std::move(data1) }, next{nullptr}
 		{
 
 		}
 	};
-	size_t size1;
+	size_t size1 = 0;
 	stack_node* head;
 	stack_node* ptr;
 
+	inline constexpr static size_t max_size1={ 4611686018427387903 };
+
 public:
-#if _HAS_CXX17
+
 	static_assert(std::is_object_v<_Ty>, "The C++ Standard forbids container adaptors of non-object types "
 		"because of [container.requirements].");
 	static_assert(!std::is_reference_v<_Ty>,"no references allowed");
 	static_assert(std::is_copy_constructible_v<_Ty>, "this stack doesnt take non copy constructible types");
 	static_assert(!std::is_const_v<std::remove_reference_t<_Ty>>, "no const types are allowed");
 	static_assert(!std::is_volatile_v<std::remove_reference_t<_Ty>>, "no volatile types are allowed");
-#else
-	static_assert(std::is_object<_Ty>::value, "The C++ Standard forbids container adaptors of non-object types "
-		"because of [container.requirements].");
-	static_assert(!std::is_reference<_Ty>::value, "no references allowed");
-	static_assert(std::is_copy_constructible<_Ty>::value, "this stack doesnt take non copy constructible types");
-	static_assert(!std::is_const<std::remove_reference_t<_Ty>>::value, "no const types are allowed");
-	static_assert(!std::is_volatile<std::remove_reference_t<_Ty>>::value, "no volatile types are allowed");
-#endif
+
 
 	stack() :head{ nullptr }, ptr{ nullptr }, size1{ 0 }
 	{
@@ -84,7 +84,7 @@ public:
 	}
 
 	
-	void push(const _Ty&data1)noexcept(std::is_nothrow_copy_constructible_v<_Ty>&& std::is_nothrow_copy_assignable_v<_Ty >) {
+	void push(const _Ty&data1)/*noexcept(std::is_nothrow_copy_constructible_v<_Ty>&& std::is_nothrow_copy_assignable_v<_Ty >)*/ {
 		if (size1 == 0) {
 			size1++;
 			
@@ -101,7 +101,7 @@ public:
 			ptr = ptr->next;
 		}
 	}
-	void push(_Ty&& data1)noexcept(std::is_nothrow_move_constructible_v<_Ty>&& std::is_nothrow_move_assignable_v<_Ty>) {
+	void push(_Ty&& data1)/*noexcept(std::is_nothrow_move_constructible_v<_Ty>&& std::is_nothrow_move_assignable_v<_Ty>)*/ {
 		if (size1 == 0) {
 			size1++;
 			head = new(std::nothrow) stack_node(std::move(data1));
@@ -118,7 +118,7 @@ public:
 			ptr = ptr->next;
 		}
 	}
-    _NODISCARD  size_t size()const noexcept {
+    _NODISCARD   size_t size()const noexcept {
 		return size1;
 	}
 	_NODISCARD   bool empty()const noexcept {
@@ -133,7 +133,74 @@ public:
 		throw bad_stack_access{ "access an empty stack" };
 
 	}
-	
+
+	_NODISCARD _CONSTEXPR20 size_t max_size()noexcept {
+		return max_size1;
+	}
+
+	stack& operator =(const stack& right)& {
+		if (this != &right) {
+			if (this->head != nullptr) {
+				if (right.head == nullptr) {
+					this->~stack();
+					return *this;
+				}
+				this->~stack();
+				const stack_node* ptr1 = right.head;
+				for (size_t i = 0; i < right.size1; i++) {
+					push(ptr1->data);
+					ptr1 = ptr1->next;
+				}
+				size1 = right.size1;
+			}
+			else {
+				const stack_node* ptr1 = right.head;
+				for (size_t i = 0; i < right.size1; i++) {
+					push(ptr1->data);
+
+					ptr1 = ptr1->next;
+				}
+				size1 = right.size1;
+			}
+			
+
+		}
+		return *this;
+	}
+	stack& operator =(stack&& right) & noexcept(noexcept(std::exchange(head, right.head)) && noexcept(std::exchange(ptr, right.ptr)))  {
+		if (this != &right) {
+			if (this->head != nullptr) {
+				if (right.head == nullptr) {
+					this->~stack();
+					return *this;
+				}
+				this->~stack();
+
+
+				
+				head = std::exchange(right.head, nullptr);
+				ptr = std::exchange(right.ptr, nullptr);
+				size1 = std::exchange(right.size1, 0);
+			}
+			else {
+
+				if (right.head == nullptr) {
+					return *this;
+				}
+			
+				head = std::exchange(right.head, nullptr);
+				ptr = std::exchange(right.ptr, nullptr);
+				size1 = std::exchange(right.size1, 0);
+
+			}
+
+
+		}
+		else {
+			this->~stack();
+		}
+		return *this;
+	}
 	void pop() {
 		if (size1 > 1) {
 			delete ptr;
@@ -174,7 +241,6 @@ public:
 			ptr = ptr->next;
 		}
 	}
-
 	void swap(stack &right)noexcept(noexcept(std::exchange(head, right.head))&&noexcept(std::exchange(ptr, right.ptr))) {
 		
 		right.head=std::exchange(head, right.head);
@@ -184,6 +250,8 @@ public:
 		right.size1 = temp;
 		return;
 	}
+
+
 	~stack() noexcept{
 
 		stack_node* ptr1 = head;
@@ -208,3 +276,5 @@ public:
 
 
 _PANAGIOTIS_END
+
+#endif
