@@ -6,7 +6,7 @@
 #include<iostream>
 #include<utility>
 
-#if _HAS_CXX20
+#if __cplusplus > 202002L
 _PANAGIOTIS_BEGIN
 
 template<class _Ty>
