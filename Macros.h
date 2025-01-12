@@ -2,7 +2,7 @@
 
 #include<exception>
 #include<string>
-#if _HAS_CXX20
+#if __cplusplus > 202002L
 #define _NODISCARD [[nodiscard]]
 
 #define _CONSTEXPR20 constexpr
