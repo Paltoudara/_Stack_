@@ -12,21 +12,35 @@ _PANAGIOTIS_BEGIN
 template<class _Ty>
 class stack {
 private:
+	
 	class stack_node {
 	public:
 		stack_node* next;
 		_Ty data;
+		
 		template<typename t=_Ty>
 		requires(std::is_default_constructible_v<t>)
 
 		stack_node() :data{}, next{ nullptr } {
-
+			
 		}
-
-		stack_node(_Ty data1) :data{ std::move(data1) }, next{nullptr}
+		template<typename t=_Ty>
+		stack_node(_Ty data1):  next{nullptr}
 		{
-
+			if constexpr (std::is_move_assignable_v<t>) {
+				
+				data = std::move(data1);
+				return;
+			}
+			else if constexpr(std::is_copy_assignable_v<t>) {
+				
+				data = data1;
+				return;
+			}
+			
 		}
+		
+		
 	};
 	size_t size1 = 0;
 	stack_node* head;
@@ -125,16 +139,16 @@ public:
 		if (head == nullptr)return true;
 		return false;
 	}
-	_NODISCARD _Ty& top() {
+	_NODISCARD _Ty& top()const  {
 		if (!empty()) {
 			return ptr->data;
 		}
 		
-		throw bad_stack_access{ "access an empty stack" };
+		throw bad_stack_access_{ "access an empty stack" };
 
 	}
 
-	_NODISCARD _CONSTEXPR20 size_t max_size()noexcept {
+	_NODISCARD _CONSTEXPR20 size_t max_size() const noexcept {
 		return max_size1;
 	}
 
@@ -219,7 +233,7 @@ public:
 			head = nullptr;
 			return;
 		}
-		throw pop_from_empty_stack("tried to pop an element from an empty stack");
+		throw pop_from_empty_stack_("tried to pop an element from an empty stack");
 
 	}
 
@@ -253,7 +267,7 @@ public:
 
 
 	~stack() noexcept{
-
+		
 		stack_node* ptr1 = head;
 		stack_node* ptr2 = head;
 		for (size_t i = 0; i < size1; i++) {
