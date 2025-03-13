@@ -54,8 +54,8 @@ public:
 		"because of [container.requirements].");
 	static_assert(!std::is_reference_v<_Ty>, "no references allowed");
 	static_assert(std::is_copy_constructible_v<_Ty>, "this stack doesnt take non copy constructible types");
-	static_assert(!std::is_const_v<std::remove_reference_t<_Ty>>, "no const types are allowed");
-	static_assert(!std::is_volatile_v<std::remove_reference_t<_Ty>>, "no volatile types are allowed");
+	static_assert(!std::is_const_v<_Ty>, "no const types are allowed");
+	static_assert(!std::is_volatile_v<_Ty>, "no volatile types are allowed");
 
 
 	stack() noexcept:head{ nullptr }, ptr{ nullptr }, size1{ 0 }
