@@ -1,5 +1,290 @@
-
 #pragma once
+#include"Macros.h"
+#include<iostream>
+#include<type_traits>
+#include<initializer_list>
+#include<utility>
+#include<new>
+#if __cplusplus > 202002L
+_PANAGIOTIS_BEGIN
+	template<typename _Ty>
+	class Stack final {
+	private:
+		class Stack_Node final{
+		public:
+			_Ty data;
+			Stack_Node* next;
+
+			template<typename t=_Ty>
+			requires(std::is_nothrow_default_constructible_v<_Ty>)
+			Stack_Node() noexcept : data{}, next{}
+			{
+				//this constructos should not throw 
+			}
+			Stack_Node(const _Ty& item) noexcept(noexcept(data=item))
+				:data{item},next{nullptr}
+			{
+				
+			}
+			Stack_Node(_Ty&& item) noexcept(noexcept(data =std::move( item)))
+				:data{std::move( item) }, next{ nullptr }
+			{
+
+			}
+			
+		};
+		std::size_t count;
+		Stack_Node* head;
+		
+	public:
+		static_assert(std::is_object_v<_Ty>, "The C++ Standard forbids container adaptors of non-object types "
+			"because of [container.requirements].");
+		static_assert(!std::is_reference_v<_Ty>, "no references allowed");
+		static_assert(!std::is_const_v<_Ty>, "no const types are allowed");
+		static_assert(!std::is_volatile_v<_Ty>, "no volatile types are allowed");
+
+		Stack() noexcept:  head { nullptr }, count{0}
+		{
+
+		}//default contructor
+		Stack(const std::initializer_list<_Ty>& l) : head{ nullptr }, count{ 0 }
+		{
+			const _Ty* b = l.begin();
+			for (std::size_t i = 0; i < l.size(); i++) {
+				if (push(*b)) {
+					b++;
+				}
+				else {
+					this->~Stack();
+					break;
+				}
+				
+			}
+		}
+		Stack(const Stack& other) :head{nullptr},count{0}
+		{
+			if (this != &other) {
+				if (other.count != 0) {
+					
+		
+					Stack_Node* ptr = other.head;
+					for (std::size_t i = 0; i < other.count; i++) {
+						
+						if (push(ptr->data)) {
+							ptr = ptr->next;
+						}//what happens if push fails?
+						else {
+							this->~Stack();
+							break;
+						}
+					}
+				}
+			}
+			else {
+				head = nullptr;
+				count = 0;
+			}
+		}
+		Stack( Stack&&other) noexcept {
+			if (this != &other) {
+				head = other.head;
+				count = other.count;
+				other.head = nullptr;
+				other.count = 0;
+			}
+			else {
+				head = nullptr;
+				count = 0;
+			}
+			return;
+		}
+		
+		
+
+		//push func has O(1) complexity 
+		bool push(const _Ty &data)//if it fails nothing changes in the stack
+		{
+			if (count != 0) {
+				Stack_Node* ptr = head;
+				head = new(std::nothrow) Stack_Node(data);
+				if (head != nullptr) {
+					head->next = ptr;
+					count++;
+					return true;
+
+				}
+				else {
+					head = ptr;
+				}
+
+			}
+			else if (count == 0) {
+				head = new(std::nothrow) Stack_Node(data);
+				if (head != nullptr) {
+					count++;
+					return true;
+				}
+			}
+			
+			return false;
+		}
+		bool push(_Ty&& data) {
+			if (count != 0) {
+				Stack_Node* ptr = head;
+				head = new(std::nothrow) Stack_Node(std::move(data));
+				if (head != nullptr) {
+					head->next = ptr;
+					count++;
+					return true;
+
+				}
+				else {
+					head = ptr;
+				}
+			}
+			else if (count == 0) {
+				head = new(std::nothrow) Stack_Node(std::move(data));
+				if (head != nullptr) {
+					count++;
+					return true;
+				}
+			}
+			
+			return false;
+		}
+		//push func end
+		
+		//the size of the stack 
+		_NODISCARD std::size_t size()const noexcept {
+			return count;
+		}
+		//if the stack is empty
+		_NODISCARD bool isEmpty()const noexcept {
+			return count==0;
+		}
+
+		void pop() {
+			if (count > 1) {
+				Stack_Node* ptr = head->next;
+				delete head;
+				head = ptr;
+				count--;
+			}
+			else if (count == 1) {
+				delete head;
+				head = nullptr;
+				count = 0;
+
+			}
+			else if (count == 0) {
+				throw pop_from_empty_stack_{"tried to pop from an empty stack\n"};
+			}
+			
+			return;
+		}
+		_NODISCARD _Ty && top()&& {
+			if (count == 0) {
+				throw bad_stack_access_{ "trying to access an empty stack\n" };
+			}
+			return std::move(head->data);
+		}
+		_NODISCARD const _Ty&& top()const && {
+			if (count == 0) {
+				throw bad_stack_access_{ "trying to access an empty stack\n" };
+			}
+			return std::move(head->data);
+		}
+		_NODISCARD _Ty& top()& {
+			if (count == 0) {
+				throw bad_stack_access_{ "trying to access an empty stack\n" };
+			}
+			return head->data;
+		}
+		_NODISCARD const _Ty& top()const & {
+			if (count==0) {
+				throw bad_stack_access_{ "trying to access an empty stack\n" };
+			}
+			return head->data;
+		}
+		~Stack()noexcept {
+			if (count != 0) {
+				Stack_Node* ptr;
+				for (size_t i = 0; i < count; i++) {
+					ptr = head;
+					head = head->next;
+					delete ptr;
+				}
+				head = nullptr;
+				count = 0;
+			}
+		}
+		template<typename ..._Ty>
+		void emplace(_Ty&&... args)noexcept(noexcept(push(std::forward<_Ty>(args)...))) {
+			push(std::forward<_Ty>(args)...);
+		}
+
+		_NODISCARD Stack& operator =(const Stack& other) &
+		{
+			
+				this->~Stack();
+				if (other.count != 0) {
+					Stack_Node* ptr = other.head;
+					for (size_t i = 0; i < other.count; i++) {
+						if (push(ptr->data)) {
+							ptr = ptr->next;
+						}//what happens if push fails?
+						else {
+							this->~Stack();
+							break;
+						}
+					}
+				}
+			
+			return *this;
+		}
+		_NODISCARD Stack& operator =(Stack&& other)&noexcept
+		{
+			
+				this->~Stack();
+				if (other.count != 0) {
+					head = other.head;
+					count = other.count;
+					other.head = nullptr;
+					other.count = 0;
+				}
+			
+			return *this;
+		}
+		//void show() {
+		//	Stack_Node* ptr = head;
+		//	//std::cout << count << '\n';
+		//	for (size_t i = 0; i < count; i++) {
+		//		std::cout << ptr->data<<'\n';
+		//		ptr = ptr->next;
+		//	}
+		//}
+		
+};
+_PANAGIOTIS_END
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*#pragma once
 
 #include"Macros.h"
 #include<type_traits>
@@ -107,7 +392,7 @@ public:
 	}
 
 
-	void push(const _Ty& data1)/*noexcept(std::is_nothrow_copy_constructible_v<_Ty>&& std::is_nothrow_copy_assignable_v<_Ty >)*/ {
+	void push(const _Ty& data1)/*noexcept(std::is_nothrow_copy_constructible_v<_Ty>&& std::is_nothrow_copy_assignable_v<_Ty >)*/ /* {
 		if (size1 == 0) {
 			size1++;
 
@@ -124,7 +409,7 @@ public:
 			ptr = ptr->next;
 		}
 	}
-	void push(_Ty&& data1)/*noexcept(std::is_nothrow_move_constructible_v<_Ty>&& std::is_nothrow_move_assignable_v<_Ty>)*/ {
+	void push(_Ty&& data1)/*noexcept(std::is_nothrow_move_constructible_v<_Ty>&& std::is_nothrow_move_assignable_v<_Ty>)*//* {
 		if (size1 == 0) {
 			size1++;
 			head = new(std::nothrow) stack_node(std::move(data1));
@@ -301,110 +586,5 @@ public:
 
 
 _PANAGIOTIS_END
-
-/*#pragma once
-#include"Header1.h"
-#include<iostream>
-#include<type_traits>
-#include<initializer_list>
-#include<utility>
-#include<new>
-_PANAGIOTIS_BEGIN
-	template<typename _Ty>
-	class Stack final {
-	private:
-		class Stack_Node final{
-		public:
-			_Ty data;
-			Stack_Node* next;
-
-			template<typename t=_Ty>
-			requires(std::is_nothrow_default_constructible_v<_Ty>)
-			Stack_Node() noexcept : data{}, next{}
-			{
-				//this constructos should not throw 
-			}
-			Stack_Node(const _Ty& item) noexcept(noexcept(data=item))
-				:data{item},next{nullptr}
-			{
-				
-			}
-			Stack_Node(_Ty&& item) noexcept(noexcept(data =std::move( item)))
-				:data{std::move( item) }, next{ nullptr }
-			{
-
-			}
-			
-		};
-		std::size_t count;
-		Stack_Node* head;
-		
-	public:
-		static_assert(std::is_object_v<_Ty>, "The C++ Standard forbids container adaptors of non-object types "
-			"because of [container.requirements].");
-		static_assert(!std::is_reference_v<_Ty>, "no references allowed");
-		static_assert(!std::is_const_v<_Ty>, "no const types are allowed");
-		static_assert(!std::is_volatile_v<_Ty>, "no volatile types are allowed");
-		Stack() noexcept:  head { nullptr }, count{0}
-		{
-
-		}//default contructor
-		Stack(const std::initializer_list<_Ty>& l):  head { nullptr }, count{ 0 }
-		{
-			//to do 
-		}
-		
-
-		//push func has O(1) complexity 
-		void push(const _Ty &data)//if it fails nothing changes in the stack
-		{
-			if (count == 0) {
-				head = new(std::nothrow) Stack_Node(data);
-				if (head != nullptr) {
-					count++;
-				}
-			}
-			else {
-				
-				head = new(std::nothrow) Stack_Node(data);
-				if (head != nullptr) {
-					Stack_Node* ptr = head;
-					count++;
-					head->next = ptr;
-				}
-			}
-		}
-		void push(_Ty&& data) {
-			if (count == 0) {
-				head = new(std::nothrow) Stack_Node(std::move(data));
-				if (head != nullptr) {
-					count++;
-				}
-			}
-			else {
-
-				head = new(std::nothrow) Stack_Node(std::move(data));
-				if (head != nullptr) {
-					Stack_Node* ptr = head;
-					count++;
-					head->next = ptr;
-				}
-			}
-		}
-		//push func end
-		
-		//the size of the stack 
-		std::size_t size() {
-			return count;
-		}
-		//if the stack is empty
-		bool isEmpty() {
-			return count==0;
-		}
-		
-
-		
-};
-_PANAGIOTIS_END
 */
-#endif
+
