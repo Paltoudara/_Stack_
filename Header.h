@@ -1,10 +1,11 @@
 #pragma once
-#include"Macros.h"
+#include"Header1.h"
 #include<iostream>
 #include<type_traits>
 #include<initializer_list>
 #include<utility>
 #include<new>
+#include<cstdlib>
 #if __cplusplus > 202002L
 _PANAGIOTIS_BEGIN
 	template<typename _Ty>
@@ -182,13 +183,13 @@ _PANAGIOTIS_BEGIN
 			
 			return;
 		}
-		_NODISCARD _Ty && top()&& {
+		_NODISCARD _Ty  top()&& {
 			if (count == 0) {
 				throw bad_stack_access_{ "trying to access an empty stack\n" };
 			}
 			return std::move(head->data);
 		}
-		_NODISCARD const _Ty&& top()const && {
+		_NODISCARD const _Ty top()const && {
 			if (count == 0) {
 				throw bad_stack_access_{ "trying to access an empty stack\n" };
 			}
