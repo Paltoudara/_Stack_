@@ -2,7 +2,6 @@
 
 #include<exception>
 #include<string>
-#if __cplusplus > 202002L
 #define _NODISCARD [[nodiscard]]
 
 #define _CONSTEXPR20 constexpr
@@ -12,7 +11,7 @@ class bad_stack_access_ : public std::exception {
 private:
     std::string errorMessage; // To store the error message
 public:
-     //Constructor to initialize the error message
+    //Constructor to initialize the error message
     explicit bad_stack_access_(const std::string& message)
         : errorMessage(message) {
     }
@@ -31,10 +30,10 @@ public:
         : errorMessage(message) {
     }
 
-     //Override the what() method
+    //Override the what() method
     const char* what() const noexcept override {
         return errorMessage.c_str();
     }
 };
 
-#endif
+
