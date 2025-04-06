@@ -1,5 +1,6 @@
+
 #pragma once
-#include"Macros.h"
+#include"Header1.h"
 #include<iostream>
 #include<type_traits>
 #include<initializer_list>
@@ -208,6 +209,7 @@ _PANAGIOTIS_BEGIN
 			return head->data;
 		}
 		~Stack()noexcept {
+			
 			if (count != 0) {
 				Stack_Node* ptr;
 				for (size_t i = 0; i < count; i++) {
