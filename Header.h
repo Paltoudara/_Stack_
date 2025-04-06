@@ -302,4 +302,109 @@ public:
 
 _PANAGIOTIS_END
 
+/*#pragma once
+#include"Header1.h"
+#include<iostream>
+#include<type_traits>
+#include<initializer_list>
+#include<utility>
+#include<new>
+_PANAGIOTIS_BEGIN
+	template<typename _Ty>
+	class Stack final {
+	private:
+		class Stack_Node final{
+		public:
+			_Ty data;
+			Stack_Node* next;
+
+			template<typename t=_Ty>
+			requires(std::is_nothrow_default_constructible_v<_Ty>)
+			Stack_Node() noexcept : data{}, next{}
+			{
+				//this constructos should not throw 
+			}
+			Stack_Node(const _Ty& item) noexcept(noexcept(data=item))
+				:data{item},next{nullptr}
+			{
+				
+			}
+			Stack_Node(_Ty&& item) noexcept(noexcept(data =std::move( item)))
+				:data{std::move( item) }, next{ nullptr }
+			{
+
+			}
+			
+		};
+		std::size_t count;
+		Stack_Node* head;
+		
+	public:
+		static_assert(std::is_object_v<_Ty>, "The C++ Standard forbids container adaptors of non-object types "
+			"because of [container.requirements].");
+		static_assert(!std::is_reference_v<_Ty>, "no references allowed");
+		static_assert(!std::is_const_v<_Ty>, "no const types are allowed");
+		static_assert(!std::is_volatile_v<_Ty>, "no volatile types are allowed");
+		Stack() noexcept:  head { nullptr }, count{0}
+		{
+
+		}//default contructor
+		Stack(const std::initializer_list<_Ty>& l):  head { nullptr }, count{ 0 }
+		{
+			//to do 
+		}
+		
+
+		//push func has O(1) complexity 
+		void push(const _Ty &data)//if it fails nothing changes in the stack
+		{
+			if (count == 0) {
+				head = new(std::nothrow) Stack_Node(data);
+				if (head != nullptr) {
+					count++;
+				}
+			}
+			else {
+				
+				head = new(std::nothrow) Stack_Node(data);
+				if (head != nullptr) {
+					Stack_Node* ptr = head;
+					count++;
+					head->next = ptr;
+				}
+			}
+		}
+		void push(_Ty&& data) {
+			if (count == 0) {
+				head = new(std::nothrow) Stack_Node(std::move(data));
+				if (head != nullptr) {
+					count++;
+				}
+			}
+			else {
+
+				head = new(std::nothrow) Stack_Node(std::move(data));
+				if (head != nullptr) {
+					Stack_Node* ptr = head;
+					count++;
+					head->next = ptr;
+				}
+			}
+		}
+		//push func end
+		
+		//the size of the stack 
+		std::size_t size() {
+			return count;
+		}
+		//if the stack is empty
+		bool isEmpty() {
+			return count==0;
+		}
+		
+
+		
+};
+_PANAGIOTIS_END
+*/
 #endif
