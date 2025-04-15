@@ -67,19 +67,28 @@ _PANAGIOTIS_BEGIN
 		{
 			if (this != &other) {
 				if (other.count != 0) {
-					
-		
-					Stack_Node* ptr = other.head;
-					for (std::size_t i = 0; i < other.count; i++) {
-						
-						if (push(ptr->data)) {
-							ptr = ptr->next;
-						}//what happens if push fails?
-						else {
-							this->~Stack();
-							break;
+					//Stack_Node* ptr = head;
+					head = new(std::nothrow) Stack_Node(other.head->data);
+					if (head != nullptr) {
+						count++;
+						Stack_Node* ptr2 = other.head->next;
+						Stack_Node* ptr = head;
+						for (size_t i = 1; i < other.count; i++) {
+
+							ptr->next= new(std::nothrow) Stack_Node(ptr2->data);
+							if (ptr->next != nullptr) {
+								count++;
+								ptr = ptr->next;
+								ptr2 = ptr2->next;
+							}
+							else {
+								this->~Stack();
+								break;
+							}
 						}
 					}
+					
+					
 				}
 			}
 			
@@ -209,16 +218,16 @@ _PANAGIOTIS_BEGIN
 		~Stack()noexcept 
 		{
 			
-			if (count != 0) {
-				Stack_Node* ptr;
-				for (size_t i = 0; i < count; i++) {
-					ptr = head;
-					head = head->next;
-					delete ptr;
-				}
-				head = nullptr;
-				count = 0;
+			
+			Stack_Node* ptr;
+			for (size_t i = 0; i < count; i++) {
+				ptr = head;
+				head = head->next;
+				delete ptr;
 			}
+			head = nullptr;
+			count = 0;
+			
 		}
 		template<typename ..._Ty>
 		void emplace(_Ty&&... args)noexcept(noexcept(push(std::forward<_Ty>(args)...))) 
@@ -228,20 +237,31 @@ _PANAGIOTIS_BEGIN
 
 		 Stack<_Ty>& operator =(const Stack<_Ty>& other) &
 		 {
-			
-				this->~Stack();
-				if (other.count != 0) {
-					Stack_Node* ptr = other.head;
-					for (size_t i = 0; i < other.count; i++) {
-						if (push(ptr->data)) {
-							ptr = ptr->next;
-						}//what happens if push fails?
-						else {
-							this->~Stack();
-							break;
-						}
-					}
-				}
+			 this->~Stack();
+				
+			 if (other.count != 0) {
+				 head = new(std::nothrow) Stack_Node(other.head->data);
+				 if (head != nullptr) {
+					 count++;
+					 Stack_Node* ptr2 = other.head->next;
+					 Stack_Node* ptr = head;
+					 for (size_t i = 1; i < other.count; i++) {
+
+						 ptr->next = new(std::nothrow) Stack_Node(ptr2->data);
+						 if (ptr->next != nullptr) {
+							 count++;
+							 ptr = ptr->next;
+							 ptr2 = ptr2->next;
+						 }
+						 else {
+							 this->~Stack();
+							 break;
+						 }
+					 }
+				 }
+			 }
+			 
+
 			
 			return *this;
 		 }
