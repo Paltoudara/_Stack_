@@ -7,6 +7,8 @@
 #define _CONSTEXPR20 constexpr
 #define _PANAGIOTIS_BEGIN namespace panagiotis{
 #define _PANAGIOTIS_END }
+
+_PANAGIOTIS_BEGIN
 class bad_stack_access_ : public std::exception {
 private:
     std::string errorMessage; // To store the error message
@@ -35,5 +37,7 @@ public:
         return errorMessage.c_str();
     }
 };
+
+_PANAGIOTIS_END
 
 
