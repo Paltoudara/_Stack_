@@ -9,7 +9,7 @@
 #include<algorithm>
 #if __cplusplus > 202002L
 _PANAGIOTIS_BEGIN
-	template<typename _Ty>
+		template<typename _Ty>
 	class Stack final {
 	private:
 		class Stack_Node final{
@@ -240,6 +240,7 @@ _PANAGIOTIS_BEGIN
 			 this->~Stack();
 				
 			 if (other.count != 0) {
+				 //Stack_Node* ptr = head;
 				 head = new(std::nothrow) Stack_Node(other.head->data);
 				 if (head != nullptr) {
 					 count++;
@@ -259,6 +260,7 @@ _PANAGIOTIS_BEGIN
 						 }
 					 }
 				 }
+				
 			 }
 			 
 
