@@ -1,4 +1,3 @@
-
 #pragma once
 #include"Header1.h"
 #include<iostream>
@@ -7,6 +6,7 @@
 #include<utility>
 #include<new>
 #include<cstdlib>
+#include<algorithm>
 #if __cplusplus > 202002L
 _PANAGIOTIS_BEGIN
 	template<typename _Ty>
@@ -63,7 +63,7 @@ _PANAGIOTIS_BEGIN
 				
 			}
 		}
-		Stack(const Stack& other) :head{nullptr},count{0}
+		Stack(const Stack<_Ty>& other) :head{nullptr},count{0}
 		{
 			if (this != &other) {
 				if (other.count != 0) {
@@ -82,22 +82,17 @@ _PANAGIOTIS_BEGIN
 					}
 				}
 			}
-			else {
-				head = nullptr;
-				count = 0;
-			}
+			
 		}
-		Stack( Stack&&other) noexcept {
+		Stack(Stack<_Ty>&& other)noexcept :head{ nullptr }, count{ 0 }
+		{
 			if (this != &other) {
 				head = other.head;
 				count = other.count;
 				other.head = nullptr;
 				other.count = 0;
 			}
-			else {
-				head = nullptr;
-				count = 0;
-			}
+			
 			return;
 		}
 		
@@ -106,7 +101,7 @@ _PANAGIOTIS_BEGIN
 		//push func has O(1) complexity 
 		bool push(const _Ty &data)//if it fails nothing changes in the stack
 		{
-			if (count != 0) {
+			if (count >= 0) {
 				Stack_Node* ptr = head;
 				head = new(std::nothrow) Stack_Node(data);
 				if (head != nullptr) {
@@ -120,18 +115,19 @@ _PANAGIOTIS_BEGIN
 				}
 
 			}
-			else if (count == 0) {
+			/*else if (count == 0) {
 				head = new(std::nothrow) Stack_Node(data);
 				if (head != nullptr) {
 					count++;
 					return true;
 				}
-			}
+			}*/
 			
 			return false;
 		}
-		bool push(_Ty&& data) {
-			if (count != 0) {
+		bool push(_Ty&& data) 
+		{
+			if (count >= 0) {
 				Stack_Node* ptr = head;
 				head = new(std::nothrow) Stack_Node(std::move(data));
 				if (head != nullptr) {
@@ -144,71 +140,74 @@ _PANAGIOTIS_BEGIN
 					head = ptr;
 				}
 			}
-			else if (count == 0) {
+			/*else if (count == 0) {
 				head = new(std::nothrow) Stack_Node(std::move(data));
 				if (head != nullptr) {
 					count++;
 					return true;
 				}
-			}
+			}*/
 			
 			return false;
 		}
 		//push func end
 		
 		//the size of the stack 
-		_NODISCARD std::size_t size()const noexcept {
+		_NODISCARD std::size_t size()const noexcept 
+		{
 			return count;
 		}
 		//if the stack is empty
-		_NODISCARD bool isEmpty()const noexcept {
+		_NODISCARD bool isEmpty()const noexcept 
+		{
 			return count==0;
 		}
 
-		void pop() {
-			if (count > 1) {
+		void pop() 
+		{
+			if (count >= 1) {
 				Stack_Node* ptr = head->next;
 				delete head;
 				head = ptr;
 				count--;
 			}
-			else if (count == 1) {
-				delete head;
-				head = nullptr;
-				count = 0;
-
-			}
+			
 			else if (count == 0) {
 				throw pop_from_empty_stack_{"tried to pop from an empty stack\n"};
 			}
 			
 			return;
 		}
-		_NODISCARD _Ty  top()&& {
+		_NODISCARD _Ty  top()&& 
+		{
 			if (count == 0) {
 				throw bad_stack_access_{ "trying to access an empty stack\n" };
 			}
 			return std::move(head->data);
 		}
-		_NODISCARD const _Ty top()const && {
+		_NODISCARD const _Ty top()const && 
+		{
 			if (count == 0) {
 				throw bad_stack_access_{ "trying to access an empty stack\n" };
 			}
 			return std::move(head->data);
 		}
-		_NODISCARD _Ty& top()& {
+		_NODISCARD _Ty& top()& 
+		{
 			if (count == 0) {
 				throw bad_stack_access_{ "trying to access an empty stack\n" };
 			}
 			return head->data;
 		}
-		_NODISCARD const _Ty& top()const & {
+		_NODISCARD const _Ty& top()const & 
+		{
 			if (count==0) {
 				throw bad_stack_access_{ "trying to access an empty stack\n" };
 			}
 			return head->data;
 		}
-		~Stack()noexcept {
+		~Stack()noexcept 
+		{
 			
 			if (count != 0) {
 				Stack_Node* ptr;
@@ -222,12 +221,13 @@ _PANAGIOTIS_BEGIN
 			}
 		}
 		template<typename ..._Ty>
-		void emplace(_Ty&&... args)noexcept(noexcept(push(std::forward<_Ty>(args)...))) {
+		void emplace(_Ty&&... args)noexcept(noexcept(push(std::forward<_Ty>(args)...))) 
+		{
 			push(std::forward<_Ty>(args)...);
 		}
 
-		_NODISCARD Stack& operator =(const Stack& other) &
-		{
+		 Stack<_Ty>& operator =(const Stack<_Ty>& other) &
+		 {
 			
 				this->~Stack();
 				if (other.count != 0) {
@@ -244,9 +244,9 @@ _PANAGIOTIS_BEGIN
 				}
 			
 			return *this;
-		}
-		_NODISCARD Stack& operator =(Stack&& other)&noexcept
-		{
+		 }
+		 Stack<_Ty>& operator =(Stack<_Ty>&& other)&noexcept
+		 {
 			
 				this->~Stack();
 				if (other.count != 0) {
@@ -257,15 +257,15 @@ _PANAGIOTIS_BEGIN
 				}
 			
 			return *this;
-		}
-		//void show() {
-		//	Stack_Node* ptr = head;
-		//	//std::cout << count << '\n';
-		//	for (size_t i = 0; i < count; i++) {
-		//		std::cout << ptr->data<<'\n';
-		//		ptr = ptr->next;
-		//	}
-		//}
+		 }
+		 void swap(Stack<_Ty>&other)noexcept
+		 {
+			 std::swap(head, other.head);
+			 std::swap(count, other.count);
+
+
+		 }
+		
 		
 };
 _PANAGIOTIS_END
