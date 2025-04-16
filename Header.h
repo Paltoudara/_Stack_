@@ -1,5 +1,5 @@
 #pragma once
-#include"Header1.h"
+#include"Macros.h"
 #include<iostream>
 #include<type_traits>
 #include<initializer_list>
@@ -9,7 +9,7 @@
 #include<algorithm>
 #if __cplusplus > 202002L
 _PANAGIOTIS_BEGIN
-		template<typename _Ty>
+	template<typename _Ty>
 	class Stack final {
 	private:
 		class Stack_Node final{
@@ -110,7 +110,7 @@ _PANAGIOTIS_BEGIN
 		//push func has O(1) complexity 
 		bool push(const _Ty &data)//if it fails nothing changes in the stack
 		{
-			if (count >= 0) {
+			
 				Stack_Node* ptr = head;
 				head = new(std::nothrow) Stack_Node(data);
 				if (head != nullptr) {
@@ -123,7 +123,7 @@ _PANAGIOTIS_BEGIN
 					head = ptr;
 				}
 
-			}
+			
 			/*else if (count == 0) {
 				head = new(std::nothrow) Stack_Node(data);
 				if (head != nullptr) {
@@ -136,7 +136,7 @@ _PANAGIOTIS_BEGIN
 		}
 		bool push(_Ty&& data) 
 		{
-			if (count >= 0) {
+			
 				Stack_Node* ptr = head;
 				head = new(std::nothrow) Stack_Node(std::move(data));
 				if (head != nullptr) {
@@ -148,7 +148,7 @@ _PANAGIOTIS_BEGIN
 				else {
 					head = ptr;
 				}
-			}
+			
 			/*else if (count == 0) {
 				head = new(std::nothrow) Stack_Node(std::move(data));
 				if (head != nullptr) {
@@ -237,21 +237,53 @@ _PANAGIOTIS_BEGIN
 
 		 Stack<_Ty>& operator =(const Stack<_Ty>& other) &
 		 {
-			 this->~Stack();
+			 //this->~Stack();
 				
 			 if (other.count != 0) {
-				 //Stack_Node* ptr = head;
-				 head = new(std::nothrow) Stack_Node(other.head->data);
-				 if (head != nullptr) {
-					 count++;
-					 Stack_Node* ptr2 = other.head->next;
-					 Stack_Node* ptr = head;
-					 for (size_t i = 1; i < other.count; i++) {
+				 if (count == 0) {
 
-						 ptr->next = new(std::nothrow) Stack_Node(ptr2->data);
-						 if (ptr->next != nullptr) {
+					 head = new(std::nothrow) Stack_Node(other.head->data);
+					 if (head != nullptr) {
+						 count++;
+						 Stack_Node* ptr2 = other.head->next;
+						 Stack_Node* ptr = head;
+						 for (size_t i = 1; i < other.count; i++) {
+
+							 ptr->next = new(std::nothrow) Stack_Node(ptr2->data);
+							 if (ptr->next != nullptr) {
+								 count++;
+								 ptr = ptr->next;
+								 ptr2 = ptr2->next;
+							 }
+							 else {
+								 this->~Stack();
+								 break;
+							 }
+						 }
+					 }
+					 return *this;
+				 }
+				 Stack_Node* ptr1 = head;
+				 Stack_Node* ptr2 = other.head;
+				 while (ptr1 != nullptr && ptr2 != nullptr) 
+				 {
+					 while (ptr1->next != nullptr && ptr2->next != nullptr) 
+					 {//copie all the elements necessesary 
+						
+						 ptr1->data = ptr2->data;
+						 ptr1 = ptr1->next;
+						 ptr2 = ptr2->next;
+					 }
+					 ptr1->data = ptr2->data;
+					 break;
+				 }
+				 if (count < other.count) {
+					 ptr2 = ptr2->next;
+					 while (ptr2 != nullptr) {
+						 ptr1->next = new (std::nothrow) Stack_Node(ptr2->data);
+						 if (ptr1->next != nullptr) {
 							 count++;
-							 ptr = ptr->next;
+							 ptr1 = ptr1->next;
 							 ptr2 = ptr2->next;
 						 }
 						 else {
@@ -259,8 +291,25 @@ _PANAGIOTIS_BEGIN
 							 break;
 						 }
 					 }
+					 return *this;
+
+				 }
+				 else if (count > other.count) {
+					
+					 ptr1 = ptr1->next;
+					 //std::cout << ptr1->data << '\n';
+					 while (ptr1 != nullptr) {
+						 Stack_Node* ptr = ptr1;
+						 ptr1 = ptr1->next;
+						
+						 delete ptr;
+						 count--;
+					 }
 				 }
 				
+			 }
+			 else {
+				 this->~Stack();
 			 }
 			 
 
