@@ -19,20 +19,22 @@ _PANAGIOTIS_BEGIN
 
 			template<typename t=_Ty>
 			requires(std::is_nothrow_default_constructible_v<_Ty>)
-			Stack_Node() noexcept : data{}, next{}
+			Stack_Node() noexcept 
+				: data{}, next{nullptr}
 			{
 				//this constructos should not throw 
 			}
-			Stack_Node(const _Ty& item) noexcept(noexcept(data=item))
-				:data{item},next{nullptr}
+			Stack_Node(const _Ty& item)noexcept(noexcept(data=item))
+				: next{ nullptr }
 			{
-				
+				data = item;
 			}
-			Stack_Node(_Ty&& item) noexcept(noexcept(data =std::move( item)))
-				:data{std::move( item) }, next{ nullptr }
+			Stack_Node( _Ty&& item)noexcept(noexcept(data= std::move(item)))
+				: next{ nullptr }
 			{
-
+				data = std::move(item);
 			}
+			
 			
 		};
 		std::size_t count;
@@ -44,7 +46,7 @@ _PANAGIOTIS_BEGIN
 		static_assert(!std::is_reference_v<_Ty>, "no references allowed");
 		static_assert(!std::is_const_v<_Ty>, "no const types are allowed");
 		static_assert(!std::is_volatile_v<_Ty>, "no volatile types are allowed");
-
+		static_assert(!std::is_array_v<_Ty>, "no raw c arrays are allowed");
 		Stack() noexcept:  head { nullptr }, count{0}
 		{
 
@@ -306,7 +308,7 @@ _PANAGIOTIS_BEGIN
 					 while (ptr1 != nullptr) {
 						 Stack_Node* ptr = ptr1;
 						 ptr1 = ptr1->next;
-						 
+						
 						 delete ptr;
 						 count--;
 					 }
