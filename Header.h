@@ -9,7 +9,7 @@
 #include<algorithm>
 #if __cplusplus > 202002L
 _PANAGIOTIS_BEGIN
-		template<typename _Ty>
+	template<typename _Ty>
 	class Stack final {
 	private:
 		class Stack_Node final{
@@ -17,8 +17,7 @@ _PANAGIOTIS_BEGIN
 			_Ty data;
 			Stack_Node* next;
 
-			template<typename t=_Ty>
-			requires(std::is_nothrow_default_constructible_v<_Ty>)
+			
 			Stack_Node() noexcept 
 				: data{}, next{nullptr}
 			{
