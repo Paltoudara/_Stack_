@@ -343,6 +343,22 @@ _PANAGIOTIS_BEGIN
 
 
 		 }
+		template<class ..._Valty>
+		void emplace(_Valty&&... _Val) {
+			Stack_Node* ptr = head;
+			head = new(std::nothrow) Stack_Node(std::forward<_Valty>(_Val)...);
+			if (head != nullptr) {
+				head->next = ptr;
+				count++;
+				return true;
+
+			}
+			else {
+				head = ptr;
+			}
+			return false;
+
+		}
 		
 		
 };
