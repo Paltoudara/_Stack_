@@ -240,7 +240,7 @@ _PANAGIOTIS_BEGIN
 		 Stack<_Ty>& operator =(const Stack<_Ty>& other) &
 		 {
 			 //this->~Stack();
-				
+			 if(this==&other)return *this;
 			 if (other.count != 0) {
 				 if (count == 0) {
 
