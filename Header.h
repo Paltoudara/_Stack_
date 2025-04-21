@@ -7,6 +7,7 @@
 #include<new>
 #include<cstdlib>
 #include<algorithm>
+#include<functional>
 #if __cplusplus > 202002L
 _PANAGIOTIS_BEGIN
 	template<typename _Ty>
