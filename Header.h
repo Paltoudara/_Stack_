@@ -280,9 +280,9 @@ _PANAGIOTIS_BEGIN
 					 break;
 				 }
 				 if (count < other.count) {
-					  Stack_Node *ptr{};
+					  
 					 if (ptr2 != nullptr) {
-						 ptr=ptr2;
+						
 						 ptr2 = ptr2->next;
 					 } 
 					
@@ -303,7 +303,9 @@ _PANAGIOTIS_BEGIN
 
 				 }
 				 else if (count > other.count) {
+					 Stack_Node *ptr3{};
 					 if (ptr1 != nullptr) {
+						 ptr3=ptr1;
 						 ptr1 = ptr1->next;
 					 }
 					 //std::cout << ptr1->data << '\n';
@@ -314,6 +316,7 @@ _PANAGIOTIS_BEGIN
 						 delete ptr;
 						 count--;
 					 }
+					 ptr3->next=nullptr;
 				 }
 				
 			 }
