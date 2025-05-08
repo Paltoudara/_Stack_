@@ -280,8 +280,9 @@ _PANAGIOTIS_BEGIN
 					 break;
 				 }
 				 if (count < other.count) {
-					 
+					  Stack_Node *ptr{};
 					 if (ptr2 != nullptr) {
+						 ptr=ptr2;
 						 ptr2 = ptr2->next;
 					 } 
 					
@@ -297,6 +298,7 @@ _PANAGIOTIS_BEGIN
 							 break;
 						 }
 					 }
+					 ptr->next=nullptr;
 					 return *this;
 
 				 }
