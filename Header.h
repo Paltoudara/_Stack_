@@ -302,6 +302,15 @@ public:
 		
 		return *this;
 	}
+	_NODISCARD std::size_t count_items()const noexcept {
+		stack_node* ptr{ head };
+		std::size_t node_count{ 0 };
+		while (ptr != nullptr) {
+			node_count++;
+			ptr = ptr->next;
+		}
+		return node_count;
+	}
 
 
 
