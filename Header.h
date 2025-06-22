@@ -25,7 +25,7 @@ private:
 	public:
 		stack_node* next;
 		_Ty data;
-		stack_node() noexcept
+		stack_node()
 			:data{}, next{ nullptr }
 		{
 			static_assert(std::is_default_constructible_v<_Ty>, "the type must be default constructible");
