@@ -1,58 +1,144 @@
-
 #pragma once
-#include"Macros.h"
 #include<iostream>
 #include<type_traits>
+#include<cstdlib>
 #include<initializer_list>
 #include<utility>
 #include<new>
-#include<cstdlib>
-#include<algorithm>
 #include<functional>
-#if __cplusplus>202002L
+#include"Macros.h"
+//interface:
+//emplace,top,push,empty,pop,size,swap,show
+//
 _PANAGIOTIS_BEGIN
 template<typename _Ty>
-class Stack final {
+class stack final {
 private:
-	class Stack_Node final {
-	public:
-		_Ty data;
-		Stack_Node* next;
-
-
-		Stack_Node() noexcept
-			: data{}, next{ nullptr }
+	class stack_node final{
+	private:
+		class secret_class {};
+		template<class ..._Valty>
+		stack_node(secret_class,_Valty&&..._Val) :data{ std::forward<_Valty>(_Val)... }, next{ nullptr }
 		{
-			//this constructos should not throw 
 		}
-		Stack_Node(const _Ty& item)noexcept(noexcept(data = item))
-			: next{ nullptr }
+	public:
+		stack_node* next;
+		_Ty data;
+		stack_node() noexcept
+			:data{}, next{ nullptr }
 		{
+			static_assert(std::is_default_constructible_v<_Ty>, "the type must be default constructible");
+		}
+		stack_node(const _Ty& item)noexcept(noexcept(data=item)):
+			next{ nullptr }
+		{
+			static_assert(std::is_copy_assignable_v<_Ty>, "the type must be copy assignable");
 			data = item;
 		}
-		Stack_Node(_Ty&& item)noexcept(noexcept(data = std::move(item)))
-			: next{ nullptr }
+		stack_node(_Ty&& item) noexcept(noexcept(data=std::move(item)))
+			:next{nullptr}
 		{
+			static_assert(std::is_move_assignable_v<_Ty>, "the type must be move assignable");
 			data = std::move(item);
 		}
+		template<class ..._Valty>
+		static stack_node* craft(_Valty&& ..._Val) {
 
+			stack_node* ptr = new(std::nothrow) stack_node{ secret_class{},std::forward<_Valty>(_Val)... };
+			return ptr;
 
+		}
 	};
 	std::size_t count;
-	Stack_Node* head;
-
+	stack_node* head; 
+	template<typename _Valty>
+	bool push_node(_Valty &&_Val) {
+		stack_node* ptr = new (std::nothrow)stack_node(std::forward<_Valty>(_Val));
+		if (ptr != nullptr) {
+			ptr->next = head;
+			head = ptr;
+			count++;
+			return true;
+			
+		}
+		else {
+			return false;
+		}
+	}
+	void pop_node() 
+	{
+		static_assert(std::is_destructible_v<_Ty>, "the type must be destructbile");
+		if (count != 0) {
+			stack_node* ptr = head->next;
+			delete head;
+			head = ptr;
+			count--;
+			return;
+		}
+		throw pop_from_empty_stack_{ "tried to pop from an empty stack\n" };
+	}
+	template<typename ..._Valty>
+	bool emplace_node(_Valty&&..._Val) {
+		stack_node* ptr = stack_node::craft(std::forward<_Valty>(_Val)...);
+		if (ptr != nullptr) {
+			ptr->next = head;
+			head = ptr;
+			count++;
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	void clear()noexcept {
+		static_assert(std::is_destructible_v<_Ty>, "the type must be destructbile");
+		stack_node* ptr{};
+		for (size_t i = 0; i < count; i++) {
+			ptr = head;
+			head = head->next;
+			delete ptr;
+		}
+		head = nullptr;
+		count = 0;
+	}
 public:
+	//some type traits in order to use the container 
 	static_assert(std::is_object_v<_Ty>, "The C++ Standard forbids container adaptors of non-object types "
 		"because of [container.requirements].");
 	static_assert(!std::is_reference_v<_Ty>, "no references allowed");
 	static_assert(!std::is_const_v<_Ty>, "no const types are allowed");
 	static_assert(!std::is_volatile_v<_Ty>, "no volatile types are allowed");
 	static_assert(!std::is_array_v<_Ty>, "no raw c arrays are allowed");
-	Stack() noexcept : head{ nullptr }, count{ 0 }
+
+	stack()noexcept :head{ nullptr }, count{}
 	{
 
-	}//default contructor
-	Stack(const std::initializer_list<_Ty>& l) : head{ nullptr }, count{ 0 }
+	}
+	stack(const stack<_Ty>& other) :head{ nullptr }, count{} {
+		static_assert(std::is_constructible_v<stack_node, _Ty>,"the type must be constructible");
+		if (this != &other) {
+			stack_node* ptr = other.head;
+			if (ptr == nullptr)return;
+			head = new (std::nothrow)stack_node(ptr->data);
+			if (head == nullptr)return;
+			count++;
+			stack_node* curr{ head };
+			ptr = ptr->next;
+			while (ptr != nullptr) {
+				curr->next = new (std::nothrow)stack_node(ptr->data);
+				if (curr->next != nullptr) {
+					curr = curr->next;
+					ptr = ptr->next;
+					count++;
+				}
+				else {
+					clear();
+					break;
+				}
+			}
+		}
+	}
+	stack(const std::initializer_list<_Ty>& l) :head{ nullptr }, count{}
 	{
 		const _Ty* b = l.begin();
 		for (std::size_t i = 0; i < l.size(); i++) {
@@ -60,144 +146,44 @@ public:
 				b++;
 			}
 			else {
-				this->~Stack();
+				clear();
 				break;
 			}
 
 		}
 	}
-	Stack(const Stack<_Ty>& other) :head{ nullptr }, count{ 0 }
-	{
-		if (this != &other) {
-			if (other.count != 0) {
-				//Stack_Node* ptr = head;
-				head = new(std::nothrow) Stack_Node(other.head->data);
-				if (head != nullptr) {
-					count++;
-					Stack_Node* ptr2 = other.head->next;
-					Stack_Node* ptr = head;
-					for (size_t i = 1; i < other.count; i++) {
-
-						ptr->next = new(std::nothrow) Stack_Node(ptr2->data);
-						if (ptr->next != nullptr) {
-							count++;
-							ptr = ptr->next;
-							ptr2 = ptr2->next;
-						}
-						else {
-							this->~Stack();
-							break;
-						}
-					}
-				}
-
-
-			}
-		}
-
-	}
-	Stack(Stack<_Ty>&& other)noexcept :head{ nullptr }, count{ 0 }
-	{
-		if (this != &other) {
-			head = other.head;
-			count = other.count;
-			other.head = nullptr;
-			other.count = 0;
-		}
-
-		return;
+	stack(stack<_Ty>&& other)noexcept :head{ nullptr }, count{} {
+		std::swap(head, other.head);
+		std::swap(count, other.count);
 	}
 
-
-
-	//push func has O(1) complexity 
-	bool push(const _Ty& data)//if it fails nothing changes in the stack
+	bool push(const _Ty&data) 
 	{
+		return push_node(data);
 
-		Stack_Node* ptr = head;
-		head = new(std::nothrow) Stack_Node(data);
-		if (head != nullptr) {
-			head->next = ptr;
-			count++;
-			return true;
-
-		}
-		else {
-			head = ptr;
-		}
-
-
-		/*else if (count == 0) {
-			head = new(std::nothrow) Stack_Node(data);
-			if (head != nullptr) {
-				count++;
-				return true;
-			}
-		}*/
-
-		return false;
 	}
-	bool push(_Ty&& data)
-	{
-
-		Stack_Node* ptr = head;
-		head = new(std::nothrow) Stack_Node(std::move(data));
-		if (head != nullptr) {
-			head->next = ptr;
-			count++;
-			return true;
-
-		}
-		else {
-			head = ptr;
-		}
-
-		/*else if (count == 0) {
-			head = new(std::nothrow) Stack_Node(std::move(data));
-			if (head != nullptr) {
-				count++;
-				return true;
-			}
-		}*/
-
-		return false;
+	bool push(_Ty&& data) { 
+		return push_node(std::move(data));
 	}
-	//push func end
 
-	//the size of the stack 
-	_NODISCARD std::size_t size()const noexcept
-	{
+	_NODISCARD std::size_t size()const noexcept {
 		return count;
 	}
-	//if the stack is empty
-	_NODISCARD bool isEmpty()const noexcept
-	{
+	_NODISCARD bool empty()const noexcept {
 		return count == 0;
 	}
-
-	void pop()
-	{
-		if (count >= 1) {
-			Stack_Node* ptr = head->next;
-			delete head;
-			head = ptr;
-			count--;
-		}
-
-		else if (count == 0) {
-			throw pop_from_empty_stack_{ "tried to pop from an empty stack\n" };
-		}
-
-		return;
+	void pop() { 
+		pop_node();
+		
 	}
-	_NODISCARD _Ty  top()&&
+	_NODISCARD _Ty&&  top()&&
 	{
 		if (count == 0) {
 			throw bad_stack_access_{ "trying to access an empty stack\n" };
 		}
 		return std::move(head->data);
 	}
-	_NODISCARD const _Ty top()const&&
+	_NODISCARD const _Ty&& top()const&&
 	{
 		if (count == 0) {
 			throw bad_stack_access_{ "trying to access an empty stack\n" };
@@ -218,467 +204,106 @@ public:
 		}
 		return head->data;
 	}
-	~Stack()noexcept
-	{
 
-
-		Stack_Node* ptr;
-		for (size_t i = 0; i < count; i++) {
-			ptr = head;
-			head = head->next;
-			delete ptr;
-		}
-		head = nullptr;
-		count = 0;
-
+	template<class ..._Valty>
+	bool emplace(_Valty&&..._Val) {
+		return emplace_node(std::forward<_Valty>(_Val)...);
+		
 	}
-	template<typename ..._Ty>
-	void emplace(_Ty&&... args)noexcept(noexcept(push(std::forward<_Ty>(args)...)))
-	{
-		push(std::forward<_Ty>(args)...);
-	}
-
-	Stack<_Ty>& operator =(const Stack<_Ty>& other)&
-	{
-		//this->~Stack();
-		if (this == &other)return *this;
-		if (other.count != 0) {
-			if (count == 0) {
-
-				head = new(std::nothrow) Stack_Node(other.head->data);
-				if (head != nullptr) {
-					count++;
-					Stack_Node* ptr2 = other.head->next;
-					Stack_Node* ptr = head;
-					for (size_t i = 1; i < other.count; i++) {
-
-						ptr->next = new(std::nothrow) Stack_Node(ptr2->data);
-						if (ptr->next != nullptr) {
-							count++;
-							ptr = ptr->next;
-							ptr2 = ptr2->next;
-						}
-						else {
-							this->~Stack();
-							break;
-						}
-					}
-				}
-				return *this;
-			}
-			Stack_Node* ptr1 = head;
-			Stack_Node* ptr2 = other.head;
-			while (ptr1 != nullptr && ptr2 != nullptr)
-			{
-				while (ptr1->next != nullptr && ptr2->next != nullptr)
-				{//copie all the elements necessesary 
-
-					ptr1->data = ptr2->data;
-					ptr1 = ptr1->next;
-					ptr2 = ptr2->next;
-				}
-				ptr1->data = ptr2->data;
-				break;
-			}
-			if (count < other.count) {
-
-				if (ptr2 != nullptr) {
-
-					ptr2 = ptr2->next;
-				}
-
-				while (ptr2 != nullptr) {
-					ptr1->next = new (std::nothrow) Stack_Node(ptr2->data);
-					if (ptr1->next != nullptr) {
-						count++;
-						ptr1 = ptr1->next;
-						ptr2 = ptr2->next;
-					}
-					else {
-						this->~Stack();
-						break;
-					}
-				}
-				
-				return *this;
-
-			}
-			else if (count > other.count) {
-				Stack_Node* ptr3{};
-				if (ptr1 != nullptr) {
-					ptr3 = ptr1;
-					ptr1 = ptr1->next;
-				}
-				//std::cout << ptr1->data << '\n';
-				while (ptr1 != nullptr) {
-					Stack_Node* ptr = ptr1;
-					ptr1 = ptr1->next;
-
-					delete ptr;
-					count--;
-				}
-				ptr3->next = nullptr;
-			}
-
-		}
-		else {
-			this->~Stack();
-		}
-
-
-
-		return *this;
-	}
-	Stack<_Ty>& operator =(Stack<_Ty>&& other) & noexcept
-	{
-
-		this->~Stack();
-		if (other.count != 0) {
-			head = other.head;
-			count = other.count;
-			other.head = nullptr;
-			other.count = 0;
-		}
-
-		return *this;
-	}
-	void swap(Stack<_Ty>& other)noexcept
-	{
-		std::swap(head, other.head);
+	void swap(stack<_Ty> &other)noexcept {
+		std:swap(head, other.head);
 		std::swap(count, other.count);
-
-
 	}
+
 	void show() {
-		Stack_Node* ptr = head;
+		stack_node* ptr{ head };
 		while (ptr != nullptr) {
 			std::cout << ptr->data << '\n';
 			ptr = ptr->next;
 		}
 	}
-
-};
-_PANAGIOTIS_END
-
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*#pragma once
-
-#include"Macros.h"
-#include<type_traits>
-#include<initializer_list>
-#include<iostream>
-#include<utility>
-
-#if __cplusplus > 202002L
-_PANAGIOTIS_BEGIN
-
-template<class _Ty>
-class stack final{
-private:
-
-	class stack_node {
-	public:
-		stack_node* next;
-		_Ty data;
-
-		template<typename t = _Ty>
-		requires(std::is_default_constructible_v<t>)
-		stack_node() :data{}, next{ nullptr } {
-
-		}
-		template<typename t = _Ty>
-		stack_node(_Ty data1) : next{ nullptr }
-		{
-			if constexpr (std::is_move_assignable_v<decltype(data1)>) {
-
-				data = std::move(data1);
-				return;
-			}
-			else if constexpr (std::is_copy_assignable_v<decltype(data1)>) {
-
-				data = data1;
-				return;
-			}
-
-		}
-
-
-	};
-	size_t size1 = 0;
-	stack_node* head;
-	stack_node* ptr;
-
-	inline constexpr static size_t max_size1 = { 4611686018427387903 };
-
-public:
-
-	static_assert(std::is_object_v<_Ty>, "The C++ Standard forbids container adaptors of non-object types "
-		"because of [container.requirements].");
-	static_assert(!std::is_reference_v<_Ty>, "no references allowed");
-	static_assert(std::is_copy_constructible_v<_Ty>, "this stack doesnt take non copy constructible types");
-	static_assert(!std::is_const_v<_Ty>, "no const types are allowed");
-	static_assert(!std::is_volatile_v<_Ty>, "no volatile types are allowed");
-
-
-	stack() noexcept:head{ nullptr }, ptr{ nullptr }, size1{ 0 }
-	{
-
+	~stack() noexcept{
+		clear();
+		
 	}
-	stack(const std::initializer_list<_Ty>& a)noexcept :head { nullptr }, ptr{ nullptr }, size1{0} {
-		const _Ty* b = a.begin();
-		for (std::size_t i = 0; i < a.size(); i++) {
-			push(*b);
-			b++;
+	stack<_Ty>& operator =(const stack<_Ty>& other)& {
+		static_assert(std::is_destructible_v<_Ty>, "the type must be destructbile");
+		stack_node* curr1{head};
+		stack_node* curr2{other.head};
+		stack_node* prev1{ nullptr };
+		stack_node* prev2{ nullptr };
+		while (curr1 != nullptr && curr2 != nullptr) {
+			curr1->data = curr2->data;
+			prev1= curr1;
+			prev2= curr2;
+			curr1 = curr1->next;
+			curr2 = curr2->next;
+			
 		}
-	}
-	stack(const stack& right) {
-
-		if (this != &right) {
-			const stack_node* ptr1 = right.head;
-			for (size_t i = 0; i < right.size1; i++) {
-				push_back(ptr1->data);
-
-				ptr1 = ptr1->next;
-
-			}
-			size1 = right.size1;
-			if (size1 == 0) {//empty object to empty object
-				head = nullptr;
-				ptr = nullptr;
-			}
-		}
-		else {
-			head = nullptr;
-			size1 = 0;
-			ptr = nullptr;
-		}
-	}
-	stack(stack&& right)noexcept(noexcept(std::exchange(head, right.head)) && noexcept(std::exchange(ptr, right.ptr))) {
-
-		if (this != &right) {
-			head = std::exchange(right.head, nullptr);
-			ptr = std::exchange(right.ptr, nullptr);
-			size1 = std::exchange(right.size1, 0);
-			return;
-		}
-		else {
-			head = nullptr;
-			size1 = 0;
-			ptr = nullptr;
-		}
-	}
-
-
-	void push(const _Ty& data1)/*noexcept(std::is_nothrow_copy_constructible_v<_Ty>&& std::is_nothrow_copy_assignable_v<_Ty >)*/ /* {
-		if (size1 == 0) {
-			size1++;
-
-			head = new (std::nothrow) stack_node(data1);
-			if (head == nullptr) {
-				return;
-			}
-			ptr = head;
-		}
-		else {
-			size1++;
-			ptr->next = new (std::nothrow)stack_node(data1);
-			if (ptr->next == nullptr) { return; };
-			ptr = ptr->next;
-		}
-	}
-	void push(_Ty&& data1)/*noexcept(std::is_nothrow_move_constructible_v<_Ty>&& std::is_nothrow_move_assignable_v<_Ty>)*//* {
-		if (size1 == 0) {
-			size1++;
-			head = new(std::nothrow) stack_node(std::move(data1));
-
-			if (head == nullptr) { return; };
-			ptr = head;
-
-
-		}
-		else {
-			size1++;
-			ptr->next = new(std::nothrow) stack_node(std::move(data1));
-			if (ptr->next == nullptr) { return; };
-			ptr = ptr->next;
-		}
-	}
-	_NODISCARD   size_t size()const noexcept {
-		return size1;
-	}
-	_NODISCARD   bool empty()const noexcept {
-		if (head == nullptr)return true;
-		return false;
-	}
-	_NODISCARD _Ty& top()const {
-		if (!empty()) {
-			return ptr->data;
-		}
-
-		throw bad_stack_access_{ "access an empty stack" };
-
-	}
-
-	_NODISCARD _CONSTEXPR20 size_t max_size() const noexcept {
-		return max_size1;
-	}
-
-	stack& operator =(const stack& right)& {
-
-		if (this != &right) {
-			if (this->head != nullptr) {
-				if (right.head == nullptr) {
-					this->~stack();
-					return *this;
+		if (prev1 == nullptr  && curr2!=nullptr) {//protos adios
+			head = new(std::nothrow) stack_node(curr2->data);
+			if (head == nullptr)return *this;
+			count++;
+			curr1 = head;
+			curr2 = curr2->next;
+			while (curr2 != nullptr) {
+				curr1->next = new (std::nothrow)stack_node(curr2->data);
+				if (curr1->next != nullptr) {
+					curr1 = curr1->next;
+					curr2 = curr2->next;
+					count++;
 				}
-				this->~stack();
-				const stack_node* ptr1 = right.head;
-				for (size_t i = 0; i < right.size1; i++) {
-					push(ptr1->data);
-					ptr1 = ptr1->next;
+				else {
+					clear();
+					break;
 				}
-				size1 = right.size1;
 			}
-			else {
-				const stack_node* ptr1 = right.head;
-				for (size_t i = 0; i < right.size1; i++) {
-					push(ptr1->data);
-
-					ptr1 = ptr1->next;
+			return *this;
+			
+		}
+		if (prev2 == nullptr && curr1 != nullptr) {
+			clear();
+			return *this;
+		}
+		//if curr1==curr2==nullptr both have same size
+		if (curr1 != nullptr) {
+			prev1->next = nullptr;
+			while (curr1 != nullptr) {//size>other.count,delete extra
+				prev1 = curr1;
+				curr1 = curr1->next;
+				delete prev1;
+				count--;
+			}
+			return *this;
+		}
+		if (curr2 != nullptr) {//size<other.count,allocate new nodes
+			while (curr2 != nullptr) {
+				prev1->next = new(std::nothrow) stack_node(curr2->data);
+				if (prev1->next != nullptr) {
+					prev1 = prev1->next;
+					curr2 = curr2->next;
+					count++;
 				}
-				size1 = right.size1;
+				else {
+					clear();
+					break;
+				}
+				
 			}
-
-
+			return *this;
 		}
 		return *this;
 	}
-	stack& operator =(stack&& right) & noexcept(noexcept(std::exchange(head, right.head)) && noexcept(std::exchange(ptr, right.ptr))) {
-
-		if (this != &right) {
-			if (this->head != nullptr) {
-				if (right.head == nullptr) {
-					this->~stack();
-					return *this;
-				}
-				this->~stack();
-
-
-
-				head = std::exchange(right.head, nullptr);
-				ptr = std::exchange(right.ptr, nullptr);
-				size1 = std::exchange(right.size1, 0);
-			}
-			else {
-
-				if (right.head == nullptr) {
-					return *this;
-				}
-
-				head = std::exchange(right.head, nullptr);
-				ptr = std::exchange(right.ptr, nullptr);
-				size1 = std::exchange(right.size1, 0);
-
-			}
-
-
-		}
-		else {
-			this->~stack();
-		}
+	stack<_Ty>& operator =(stack<_Ty>&& other) &noexcept {
+		clear();
+		std::swap(head, other.head);
+		std::swap(count, other.count);
+		
 		return *this;
-	}
-	void pop() {
-		if (size1 > 1) {
-			delete ptr;
-			size1--;
-			ptr = head;
-			for (size_t i = 0; i < size1 - 1; i++) {
-				ptr = ptr->next;
-			}
-			ptr->next = nullptr;
-			return;
-		}
-		else if (size1 == 1) {
-			size1 = 0;
-			ptr = nullptr;
-			delete head;
-			head = nullptr;
-			return;
-		}
-		throw pop_from_empty_stack_("tried to pop an element from an empty stack");
-
-	}
-
-	template <class... _Valty>
-	void emplace(_Valty&&... _Val) {
-		if (size1 == 0) {
-			size1++;
-
-			head = new (std::nothrow) stack_node(std::forward<_Valty>(_Val)...);
-			if (head == nullptr) {
-				return;
-			}
-			ptr = head;
-		}
-		else {
-			size1++;
-			ptr->next = new (std::nothrow)stack_node(std::forward<_Valty>(_Val)...);
-			if (ptr->next == nullptr) { return; };
-			ptr = ptr->next;
-		}
-	}
-	void swap(stack& right)noexcept(noexcept(std::exchange(head, right.head)) && noexcept(std::exchange(ptr, right.ptr))) {
-
-		right.head = std::exchange(head, right.head);
-		right.ptr = std::exchange(ptr, right.ptr);
-		size_t temp = size1;
-		size1 = right.size1;
-		right.size1 = temp;
-		return;
-	}
-
-
-	~stack() noexcept {
-
-		stack_node* ptr1 = head;
-		stack_node* ptr2 = head;
-		for (size_t i = 0; i < size1; i++) {
-			ptr2 = ptr2->next;
-			delete ptr1;
-			ptr1 = ptr2;
-
-
-		}
-		size1 = 0;
-		head = nullptr;
-		ptr = nullptr;
-		return;
-
 	}
 
 
 
 };
 
-
 _PANAGIOTIS_END
-*/
-
-
