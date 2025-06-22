@@ -6,6 +6,7 @@
 #include<utility>
 #include<new>
 #include<functional>
+#include<algorithm>
 #include"Macros.h"
 //interface:
 //emplace,top,push,empty,pop,size,swap,show
