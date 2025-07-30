@@ -212,7 +212,7 @@ public:
 		
 	}
 	void swap(stack<_Ty> &other)noexcept {
-		std:swap(head, other.head);
+		std::swap(head, other.head);
 		std::swap(count, other.count);
 	}
 
